@@ -1,0 +1,9 @@
+# Python 가상환경
+.venv/
+__pycache__/
+
+# 환경 변수 파일
+.env
+
+# firebase key file
+firebase_key.json
