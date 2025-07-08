@@ -31,6 +31,12 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Run some step needing Kakao keys
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          KAKAO_REDIRECT_URI: ${{ secrets.KAKAO_REDIRECT_URI }}
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
@@ -62,7 +68,9 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      
+      - name: Write Firebase service account key file
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > firebase_key.json
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
