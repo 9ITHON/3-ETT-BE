@@ -26,7 +26,7 @@ async def save_archive_route(
         raise HTTPException(status_code=500, detail="저장 중 오류 발생")
 
 # /list: 사용자가 저장한 모든 번역 기록을 가져오는 엔드포인트
-@router.get("detail/list")
+@router.get("/list")
 async def get_archives(user=Depends(get_current_user)):
     try:
         archives = get_archives_by_user_id(user)
@@ -39,7 +39,7 @@ async def get_archives(user=Depends(get_current_user)):
         raise HTTPException(status_code=500, detail="번역 목록 조회 중 오류 발생")
 
 # /delete/{archive_id}: 특정 번역 기록을 삭제하는 엔드포인트
-@router.delete("delete/{archive_id}")
+@router.delete("/delete/{archive_id}")
 async def delete_archive_route(
     archive_id: str,
     user = Depends(get_current_user)
@@ -59,7 +59,7 @@ async def delete_archive_route(
         raise HTTPException(status_code=500, detail="삭제 중 오류 발생")
 
 # /{archive_id}: 특정 번역 기록의 세부 정보를 가져오는 엔드포인트
-@router.get("detail/{archive_id}")
+@router.get("/detail/{archive_id}")
 async def get_archive_detail(
     archive_id: str,
     user = Depends(get_current_user)
