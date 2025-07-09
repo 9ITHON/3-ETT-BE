@@ -6,9 +6,12 @@ from pydantic import BaseModel
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent / ".env")
 
 import httpx
-from fastapi import APIRouter, HTTPException, Header, Query, status
+from fastapi import APIRouter, Body, HTTPException, Header, Query, status
 from datetime import datetime, timedelta
 from app.firebase_config import db
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 router = APIRouter(prefix="/auth")
 
@@ -90,15 +93,13 @@ async def kakao_login(code: str):
     }
 
 @router.post("/refresh")
-async def refresh(refresh_token: str = Query(...)):
-    # 1. 카카오에 토큰 요청
+async def refresh(data: RefreshTokenRequest = Body(...)):
     token_data = {
         "grant_type": "refresh_token",
         "client_id": KAKAO_CLIENT_ID,
-        "refresh_token": refresh_token,
+        "refresh_token": data.refresh_token,
     }
 
-    # 카카오의 토큰 갱신 API 호출
     async with httpx.AsyncClient() as client:
         token_resp = await client.post("https://kauth.kakao.com/oauth/token", data=token_data)
 
@@ -106,9 +107,7 @@ async def refresh(refresh_token: str = Query(...)):
         print("Error Response: ", token_resp.text)
         raise HTTPException(status_code=400, detail="카카오 토큰 갱신 실패")
 
-    # 새로운 액세스 토큰과 리프레시 토큰을 응답으로 반환
     response_data = token_resp.json()
-    
     new_access_token = response_data.get("access_token")
 
     return {
