@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent / ".env")
 
@@ -14,6 +15,16 @@ router = APIRouter(prefix="/auth")
 KAKAO_CLIENT_ID = os.getenv("KAKAO_REST_API_KEY")
 KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET", None)
+
+@router.get("/login")
+async def redirect_to_kakao_login():
+    kakao_auth_url = (
+        "https://kauth.kakao.com/oauth/authorize"
+        f"?response_type=code"
+        f"&client_id={KAKAO_CLIENT_ID}"
+        f"&redirect_uri={KAKAO_REDIRECT_URI}"
+    )
+    return RedirectResponse(url=kakao_auth_url)
 
 @router.get("/login/kakao")
 async def kakao_login(code: str):
