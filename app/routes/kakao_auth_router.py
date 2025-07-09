@@ -55,6 +55,7 @@ async def kakao_login(code: str):
     access_token = token_resp.json().get("access_token")
     refresh_token = token_resp.json().get("refresh_token")
     refresh_token_expires_in = token_resp.json().get("refresh_token_expires_in")
+    expires_in = token_resp.json.get("expires_in")
 
     # 2. 사용자 정보 요청
     async with httpx.AsyncClient() as client:
@@ -84,6 +85,7 @@ async def kakao_login(code: str):
     return {
         "code" : status.HTTP_200_OK,
         "access_token": access_token,
+        "acess_token_expires_in" : expires_in,
         "refresh_token": refresh_token,
         "refresh_token_expires_in": refresh_token_expires_in,
         "user": {
