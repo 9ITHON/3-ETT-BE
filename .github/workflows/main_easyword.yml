@@ -33,15 +33,6 @@ jobs:
         run: pip install -r requirements.txt
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-      - name: Run some step needing Kakao keys
-        run: echo "Using Kakao API Keys"
-        env:
-          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
-          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
-          KAKAO_REDIRECT_URI: ${{ secrets.KAKAO_REDIRECT_URI }}
-
-      - name: Write Firebase service account key file
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase_key.json
 
       - name: Zip artifact for deployment
         run: zip release.zip ./* -r
@@ -75,9 +66,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_BBF09AB2E3134073A70C425D42A20D36 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_DFFCFF02E41342559B60E6F07D587D9D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_CECB6FEF23E04B9EBDF1B00DF412EF89 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_AA17AF615B4543039E698289576D9B77 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6662DEE6C2FA4184A3726CFEAF8BB2A4 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_61915D51BBB443E1ABB1E75775DE9CA7 }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
