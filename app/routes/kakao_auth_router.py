@@ -6,7 +6,7 @@ from pydantic import BaseModel
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent / ".env")
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Header, Query, status
 from datetime import datetime, timedelta
 from app.firebase_config import db
 
@@ -116,29 +116,22 @@ async def refresh(refresh_token: str = Query(...)):
         "access_token": new_access_token,
     }
 
+
 @router.post("/logout")
-async def logout(access_token: str = Query(...), target_id: str = Query(...)):
-    # 카카오 로그아웃 요청 URL
+async def logout(authorization: str = Header(...)):
     logout_url = "https://kapi.kakao.com/v1/user/logout"
     
-    # 로그아웃 요청 본문 데이터
-    data = {
-        "target_id_type": "user_id",  # user_id로 고정
-        "target_id": target_id  # 로그아웃시킬 사용자 ID
-    }
-    
     headers = {
-        "Authorization": f"Bearer {access_token}",  # 액세스 토큰을 Authorization 헤더에 포함
+        "Authorization": authorization,
         "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
     }
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(logout_url, headers=headers, data=data)
+        response = await client.post(logout_url, headers=headers)
 
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="카카오 로그아웃 요청 실패")
 
-    # 로그아웃 성공 시 응답 처리
     response_data = response.json()
     return {
         "code": status.HTTP_200_OK,
