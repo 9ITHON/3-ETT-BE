@@ -1,19 +1,33 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent / ".env")
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Body, HTTPException, Header, Query, status
 from datetime import datetime, timedelta
 from app.firebase_config import db
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 router = APIRouter(prefix="/auth")
 
 KAKAO_CLIENT_ID = os.getenv("KAKAO_REST_API_KEY")
 KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET", None)
+
+@router.get("/login")
+async def redirect_to_kakao_login():
+    kakao_auth_url = (
+        "https://kauth.kakao.com/oauth/authorize"
+        f"?response_type=code"
+        f"&client_id={KAKAO_CLIENT_ID}"
+        f"&redirect_uri={KAKAO_REDIRECT_URI}"
+    )
+    return RedirectResponse(url=kakao_auth_url)
 
 @router.get("/login/kakao")
 async def kakao_login(code: str):
@@ -41,6 +55,7 @@ async def kakao_login(code: str):
     access_token = token_resp.json().get("access_token")
     refresh_token = token_resp.json().get("refresh_token")
     refresh_token_expires_in = token_resp.json().get("refresh_token_expires_in")
+    expires_in = token_resp.json().get("expires_in")
 
     # 2. 사용자 정보 요청
     async with httpx.AsyncClient() as client:
@@ -70,6 +85,7 @@ async def kakao_login(code: str):
     return {
         "code" : status.HTTP_200_OK,
         "access_token": access_token,
+        "acess_token_expires_in" : expires_in,
         "refresh_token": refresh_token,
         "refresh_token_expires_in": refresh_token_expires_in,
         "user": {
@@ -79,15 +95,13 @@ async def kakao_login(code: str):
     }
 
 @router.post("/refresh")
-async def refresh(refresh_token: str = Query(...)):
-    # 1. 카카오에 토큰 요청
+async def refresh(data: RefreshTokenRequest = Body(...)):
     token_data = {
         "grant_type": "refresh_token",
         "client_id": KAKAO_CLIENT_ID,
-        "refresh_token": refresh_token,
+        "refresh_token": data.refresh_token,
     }
 
-    # 카카오의 토큰 갱신 API 호출
     async with httpx.AsyncClient() as client:
         token_resp = await client.post("https://kauth.kakao.com/oauth/token", data=token_data)
 
@@ -95,9 +109,7 @@ async def refresh(refresh_token: str = Query(...)):
         print("Error Response: ", token_resp.text)
         raise HTTPException(status_code=400, detail="카카오 토큰 갱신 실패")
 
-    # 새로운 액세스 토큰과 리프레시 토큰을 응답으로 반환
     response_data = token_resp.json()
-    
     new_access_token = response_data.get("access_token")
 
     return {
@@ -105,29 +117,22 @@ async def refresh(refresh_token: str = Query(...)):
         "access_token": new_access_token,
     }
 
+
 @router.post("/logout")
-async def logout(access_token: str = Query(...), target_id: str = Query(...)):
-    # 카카오 로그아웃 요청 URL
+async def logout(authorization: str = Header(...)):
     logout_url = "https://kapi.kakao.com/v1/user/logout"
     
-    # 로그아웃 요청 본문 데이터
-    data = {
-        "target_id_type": "user_id",  # user_id로 고정
-        "target_id": target_id  # 로그아웃시킬 사용자 ID
-    }
-    
     headers = {
-        "Authorization": f"Bearer {access_token}",  # 액세스 토큰을 Authorization 헤더에 포함
+        "Authorization": authorization,
         "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
     }
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(logout_url, headers=headers, data=data)
+        response = await client.post(logout_url, headers=headers)
 
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="카카오 로그아웃 요청 실패")
 
-    # 로그아웃 성공 시 응답 처리
     response_data = response.json()
     return {
         "code": status.HTTP_200_OK,
