@@ -4,6 +4,7 @@ import fitz
 from app.routes.feedback_router import router as feedback_router
 from app.routes.kakao_auth_router import router as kakao_auth_router
 from app.routes.archive_router import router as archive_router
+from app.routes.easy_translate import router as easy_translate_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.utils.rulebook import validate_rulebook
 import base64
@@ -27,6 +28,7 @@ app.add_middleware(
 app.include_router(kakao_auth_router)
 app.include_router(archive_router)
 app.include_router(feedback_router)
+app.include_router(easy_translate_router)
 
 class TextIn(BaseModel):
     text: str
