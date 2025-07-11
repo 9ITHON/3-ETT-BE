@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from app.firebase_config import delete_archive, get_archives_by_user_id, save_archive, get_archive_by_id
@@ -37,6 +38,27 @@ async def get_archives(user=Depends(get_current_user)):
     except Exception as e:
         print(f"[ERROR] 번역 목록 조회 실패: {e}")
         raise HTTPException(status_code=500, detail="번역 목록 조회 중 오류 발생")
+    
+# @router.get("/list")
+# async def get_archives(
+#     cursor: Optional[str] = None,
+#     limit: int = 10,
+#     user=Depends(get_current_user)
+# ):
+#     try:
+#         result = get_archives_by_user_id(user, cursor=cursor, limit=limit)
+#         return {
+#             "code": status.HTTP_200_OK,
+#             "archives": result["archives"],
+#             "next_cursor": result["next_cursor"],
+#             "has_more": result["has_more"]
+#         }
+    
+#     except ValueError as ve:
+#         raise HTTPException(status_code=400, detail=str(ve))
+#     except Exception as e:
+#         print(f"[ERROR] 번역 목록 조회 실패: {e}")
+#         raise HTTPException(status_code=500, detail="번역 목록 조회 중 오류 발생")
 
 # /delete/{archive_id}: 특정 번역 기록을 삭제하는 엔드포인트
 @router.delete("/delete/{archive_id}")
