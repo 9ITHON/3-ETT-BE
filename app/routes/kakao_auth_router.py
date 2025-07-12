@@ -96,88 +96,56 @@ async def kakao_login(code: str):
             "created_at": datetime.utcnow().isoformat()
         })
 
-    # JWT 토큰 생성 -> access_token, refresh_token, expires_in
+    # JWT 토큰 생성 -> access_token, expires_in
     jwt_token = await create_jwt_token(user_uuid)
 
     return {
         "code" : status.HTTP_200_OK,
         "access_token": jwt_token.get("access_token"), 
-        "access_token_expires_in" : jwt_token.get("access_token_expires_in"),
-        "refresh_token": jwt_token.get("refresh_token"),
-        "refresh_token_expires_in": jwt_token.get("refresh_token_expires_in"),
-        "user": {
-            "id": user_uuid,
-            "nickname": nickname
-        }
+        "access_token_expires_in" : jwt_token.get("access_token_expires_in")
     }
 
-@router.get("/user")
-async def get_user_info(authorization: str = Header(...)):
-    async with httpx.AsyncClient() as client:
-        user_resp = await client.get(
-            "https://kapi.kakao.com/v2/user/me",
-            headers={"Authorization": authorization}
-        )
+# @router.post("/kakao-refresh")
+# async def refresh(data: RefreshTokenRequest = Body(...)):
+#     token_data = {
+#         "grant_type": "refresh_token",
+#         "client_id": KAKAO_CLIENT_ID,
+#         "refresh_token": data.refresh_token,
+#     }
 
-    if user_resp.status_code != 200:
-        raise HTTPException(status_code=400, detail="카카오 사용자 정보 요청 실패")
+#     async with httpx.AsyncClient() as client:
+#         token_resp = await client.post("https://kauth.kakao.com/oauth/token", data=token_data)
 
-    user_info = user_resp.json()
-    kakao_id = str(user_info.get("id"))
-    profile = user_info.get("kakao_account", {}).get("profile", {})
-    nickname = profile.get("nickname")
-    images = profile.get("images")
+#     if token_resp.status_code != 200:
+#         print("Error Response: ", token_resp.text)
+#         raise HTTPException(status_code=400, detail="카카오 토큰 갱신 실패")
 
-    return {
-        "code": status.HTTP_200_OK,
-        "user": {
-            "id": kakao_id,
-            "nickname": nickname,
-            "images": images if images else None
-        }
-    }
+#     response_data = token_resp.json()
+#     new_access_token = response_data.get("access_token")
 
-@router.post("/refresh")
-async def refresh(data: RefreshTokenRequest = Body(...)):
-    token_data = {
-        "grant_type": "refresh_token",
-        "client_id": KAKAO_CLIENT_ID,
-        "refresh_token": data.refresh_token,
-    }
-
-    async with httpx.AsyncClient() as client:
-        token_resp = await client.post("https://kauth.kakao.com/oauth/token", data=token_data)
-
-    if token_resp.status_code != 200:
-        print("Error Response: ", token_resp.text)
-        raise HTTPException(status_code=400, detail="카카오 토큰 갱신 실패")
-
-    response_data = token_resp.json()
-    new_access_token = response_data.get("access_token")
-
-    return {
-        "code": status.HTTP_200_OK,
-        "access_token": new_access_token,
-    }
+#     return {
+#         "code": status.HTTP_200_OK,
+#         "access_token": new_access_token,
+#     }
 
 
-@router.post("/logout")
-async def logout(authorization: str = Header(...)):
-    logout_url = "https://kapi.kakao.com/v1/user/logout"
+# @router.post("/logout")
+# async def logout(authorization: str = Header(...)):
+#     logout_url = "https://kapi.kakao.com/v1/user/logout"
     
-    headers = {
-        "Authorization": authorization,
-        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
-    }
+#     headers = {
+#         "Authorization": authorization,
+#         "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+#     }
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(logout_url, headers=headers)
+#     async with httpx.AsyncClient() as client:
+#         response = await client.post(logout_url, headers=headers)
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="카카오 로그아웃 요청 실패")
+#     if response.status_code != 200:
+#         raise HTTPException(status_code=400, detail="카카오 로그아웃 요청 실패")
 
-    response_data = response.json()
-    return {
-        "code": status.HTTP_200_OK,
-        "message": f"User {response_data['id']} has been logged out successfully."
-    }
+#     response_data = response.json()
+#     return {
+#         "code": status.HTTP_200_OK,
+#         "message": f"User {response_data['id']} has been logged out successfully."
+#     }

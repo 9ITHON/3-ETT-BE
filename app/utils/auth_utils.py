@@ -3,9 +3,13 @@ import uuid, hashlib
 from fastapi import Request, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
+from dotenv import load_dotenv
+from pathlib import Path
 import httpx
 import os
 import jwt
+
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent / ".env")
 
 KAKAO_CLIENT_ID = os.getenv("KAKAO_REST_API_KEY")
 KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
@@ -27,22 +31,24 @@ async def create_jwt_token(user_uuid: str):
         "exp": now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         "type": "access"
     }
-    refresh_payload = {
-        "sub": user_uuid,
-        "iat": now,
-        "exp": now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
-        "type": "refresh"
-    }
 
     access_token = jwt.encode(access_payload, SECRET_KEY, algorithm=ALGORITHM)
-    refresh_token = jwt.encode(refresh_payload, SECRET_KEY, algorithm=ALGORITHM)
 
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
         "access_token_expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "refresh_token_expires_in": REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     }
+
+# def verify_refresh_token(token: str) -> str:
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         if payload.get("type") != "refresh":
+#             raise HTTPException(status_code=401, detail="refresh 토큰 아님")
+#         return payload.get("sub")  # user_uuid
+#     except jwt.ExpiredSignatureError:
+#         raise HTTPException(status_code=401, detail="refresh 토큰 만료")
+#     except jwt.InvalidTokenError:
+#         raise HTTPException(status_code=401, detail="refresh 토큰이 잘못됨")
 
 async def generateUserUUID(user_data: dict) -> str:
 
@@ -71,24 +77,19 @@ async def get_current_user(request: Request):
 
     try:
         # 카카오 사용자 정보 요청
-        user_resp = await httpx.AsyncClient().get(
-            "https://kapi.kakao.com/v2/user/me",
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
 
-        if user_resp.status_code != 200:
-            raise HTTPException(status_code=400, detail="카카오 사용자 정보 요청 실패")
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="access 토큰 아님")
+        return user_id
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="토큰 만료")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="잘못된 토큰")
+    
 
-        user_info = user_resp.json()
-        kakao_id = str(user_info.get("id"))
-
-        # 사용자 인증 확인
-        return kakao_id
-    except Exception as e:
-        print(f"[ERROR] 인증 실패: {e}")
-        raise HTTPException(status_code=401, detail="카카오 인증 실패")
-
-# 2. 인증이 선택인 경우
+# 인증이 선택인 경우
 async def get_optional_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(security)
 ) -> Optional[str]:
@@ -98,18 +99,12 @@ async def get_optional_user(
     access_token = credentials.credentials
 
     try:
-        # 카카오 사용자 정보 요청
-        user_resp = await httpx.AsyncClient().get(
-            "https://kapi.kakao.com/v2/user/me",
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
-
-        if user_resp.status_code != 200:
+        # JWT 디코딩
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "access":
             return None
-
-        user_info = user_resp.json()
-        kakao_id = str(user_info.get("id"))
-        return kakao_id
-    except Exception as e:
-        print(f"[ERROR] 인증 실패: {e}")
+        return payload.get("sub")  # user_uuid 반환
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
         return None
