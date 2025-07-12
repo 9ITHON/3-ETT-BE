@@ -8,6 +8,9 @@ class EasyTranslateService:
     def translate(self, text: str) -> str:
         # 단문 non-streaming 번역
         state = self.graph.run(text)
+
+        print(f"번역 결과: {state['translated'][0]}")
+        
         # 리스트로 모인 조각들을 하나의 문자열로
         return "".join(state["translated"])
 

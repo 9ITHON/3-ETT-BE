@@ -66,9 +66,9 @@ async def easy_translate_streaming(
         # done 이벤트
         full = "".join(state["translated"]) if state else ""
         done_payload = {
-            "original_text": text,
+            "original_text": text,  
             "translated_text": full,
-            "timestamp": datetime.utcnow().isoformat() + "+00:00"
+            "timestamp": datetime.utcnow().isoformat()
         }
         yield f"event: done\ndata: {json.dumps(done_payload, ensure_ascii=False)}\n\n"
 
