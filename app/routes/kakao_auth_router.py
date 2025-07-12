@@ -99,11 +99,23 @@ async def kakao_login(code: str):
     # JWT 토큰 생성 -> access_token, expires_in
     jwt_token = await create_jwt_token(user_uuid)
 
-    return {
-        "code" : status.HTTP_200_OK,
-        "access_token": jwt_token.get("access_token"), 
-        "access_token_expires_in" : jwt_token.get("access_token_expires_in")
-    }
+    # 4) myapp:// 스킴으로 리다이렉트 URL 생성
+    redirect_url = (
+       f"myapp://auth?"
+       f"access_token={jwt_token.get('access_token')}&"
+       f"expires_in={jwt_token.get('access_token_expires_in')}&"
+       f"nickname={nickname}"
+    )
+    
+#    5) 리다이렉트 응답 반환
+    return RedirectResponse(url=redirect_url)
+
+    # return {
+    #     "code" : status.HTTP_200_OK,
+    #     "access_token": jwt_token.get("access_token"), 
+    #     "access_token_expires_in" : jwt_token.get("access_token_expires_in"),
+    #     "nickname" : nickname
+    # }
 
 # @router.post("/kakao-refresh")
 # async def refresh(data: RefreshTokenRequest = Body(...)):
