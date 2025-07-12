@@ -25,51 +25,51 @@ def save_archive(user_id: str, translated_text: str, timestamp : str):
         "timestamp": timestamp
     })
 
-def get_archives_by_user_id(user_id: str):
-    docs = db.collection("archives").where("user_id", "==", user_id).order_by("timestamp", direction=firestore.Query.DESCENDING).stream()
-    return [
-        {
-            "archive_id": doc.id,
-            "translated_text": doc.to_dict().get("translated_text"),
-            "timestamp": doc.to_dict().get("timestamp")
-        }
-        for doc in docs
-    ]
-
-# def get_archives_by_user_id(user_id: str, cursor: Optional[str] = None, limit: int = 10):
-#     db = firestore.client()
-
-#     query = db.collection("archives") \
-#               .where("user_id", "==", user_id) \
-#               .order_by("timestamp", direction=firestore.Query.DESCENDING)
-
-#     if cursor:
-#         try:
-#             cursor_dt = datetime.fromisoformat(cursor.replace("Z", "+00:00"))
-#             query = query.start_after({"timestamp": cursor_dt})
-#         except ValueError:
-#             raise ValueError("커서 timestamp 형식이 올바르지 않습니다.")
-
-#     docs = list(query.limit(limit + 1).stream())
-
-#     archives = []
-#     for doc in docs:
-#         data = doc.to_dict()
-#         archives.append({
+# def get_archives_by_user_id(user_id: str):
+#     docs = db.collection("archives").where("user_id", "==", user_id).order_by("timestamp", direction=firestore.Query.DESCENDING).stream()
+#     return [
+#         {
 #             "archive_id": doc.id,
-#             "translated_text": data.get("translated_text"),
-#             "timestamp": data.get("timestamp")
-#         })
+#             "translated_text": doc.to_dict().get("translated_text"),
+#             "timestamp": doc.to_dict().get("timestamp")
+#         }
+#         for doc in docs
+#     ]
 
-#     has_more = len(archives) > limit
-#     archives = archives[:limit]
-#     next_cursor = archives[-1]["timestamp"].isoformat() if has_more else None
+def get_archives_by_user_id(user_id: str, cursor: Optional[str] = None, limit: int = 10):
+    db = firestore.client()
 
-#     return {
-#         "archives": archives,
-#         "next_cursor": next_cursor,
-#         "has_more": has_more
-#     }
+    query = db.collection("archives") \
+              .where("user_id", "==", user_id) \
+              .order_by("timestamp", direction=firestore.Query.DESCENDING)
+
+    if cursor:
+        try:
+            cursor_dt = datetime.fromisoformat(cursor.replace("Z", "+00:00"))
+            query = query.start_after({"timestamp": cursor_dt})
+        except ValueError:
+            raise ValueError("커서 timestamp 형식이 올바르지 않습니다.")
+
+    docs = list(query.limit(limit + 1).stream())
+
+    archives = []
+    for doc in docs:
+        data = doc.to_dict()
+        archives.append({
+            "archive_id": doc.id,
+            "translated_text": data.get("translated_text"),
+            "timestamp": data.get("timestamp")
+        })
+
+    has_more = len(archives) > limit
+    archives = archives[:limit]
+    next_cursor = archives[-1]["timestamp"].isoformat() if has_more else None
+
+    return {
+        "archives": archives,
+        "next_cursor": next_cursor,
+        "has_more": has_more
+    }
 
 def get_archive_by_id(archive_id: str):
     doc_ref = db.collection("archives").document(archive_id)
