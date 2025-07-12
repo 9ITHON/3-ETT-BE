@@ -50,11 +50,11 @@ def get_archives_by_user_id(user_id: str, cursor: Optional[str] = None, limit: i
               .order_by("timestamp", direction=firestore.Query.DESCENDING)
 
     if cursor:
-        try:
-            cursor_dt = datetime.fromisoformat(cursor.replace("Z", "+00:00"))
-            query = query.start_after({"timestamp": cursor_dt})
-        except ValueError:
-            raise ValueError("커서 timestamp 형식이 올바르지 않습니다.")
+        cursor_doc = db.collection("archives").document(cursor).get()
+        if cursor_doc.exists:
+            query = query.start_after(cursor_doc)
+        else:
+            raise ValueError("유효하지 않은 cursor ID입니다.")
 
     docs = list(query.limit(limit + 1).stream())
 
@@ -69,7 +69,7 @@ def get_archives_by_user_id(user_id: str, cursor: Optional[str] = None, limit: i
 
     has_more = len(archives) > limit
     archives = archives[:limit]
-    next_cursor = archives[-1]["timestamp"].isoformat() if has_more else None
+    next_cursor = archives[-1]["archive_id"] if has_more else None
 
     return {
         "archives": archives,
