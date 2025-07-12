@@ -93,6 +93,7 @@ async def kakao_login(code: str):
     if not user_ref.get().exists:
         user_ref.set({
             "nickname": nickname,
+            "email": email,
             "created_at": datetime.utcnow().isoformat()
         })
 
@@ -107,7 +108,7 @@ async def kakao_login(code: str):
        f"nickname={nickname}"
     )
     
-#    5) 리다이렉트 응답 반환
+    #5) 리다이렉트 응답 반환
     return RedirectResponse(url=redirect_url)
 
     # return {
