@@ -18,11 +18,13 @@ def save_feedback(rating: str, comment: Optional[str], user_id: Optional[str] = 
     })
 
 def save_archive(user_id: str, translated_text: str, timestamp : str):
+    dt_timestamp = datetime.strptime(timestamp, "%Y-%m-%d")
+
     doc_ref = db.collection("archives").document()
     doc_ref.set({
         "user_id": user_id,
         "translated_text": translated_text,
-        "timestamp": timestamp
+        "timestamp": dt_timestamp
     })
 
 # def get_archives_by_user_id(user_id: str):
