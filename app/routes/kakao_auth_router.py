@@ -3,12 +3,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
+import uuid
+import hashlib
+
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent.parent / ".env")
 
 import httpx
 from fastapi import APIRouter, Body, HTTPException, Header, Query, status
 from datetime import datetime, timedelta
 from app.firebase_config import db
+from app.utils.auth_utils import create_jwt_token, generateUserUUID
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
@@ -71,25 +75,38 @@ async def kakao_login(code: str):
     kakao_id = str(user_info.get("id"))
     profile = user_info.get("kakao_account", {}).get("profile", {})
     nickname = profile.get("nickname")
+    email = user_info.get("kakao_account", {}).get("email")
 
-    print("kakao_id : " ,kakao_id)
+    user_data = {
+        "kakao_id": kakao_id,
+        "nickname": nickname,
+        "email": email
+    }
+
+    print("User Data:", user_data)
+
+    # uuid 생성
+    user_uuid = await generateUserUUID(user_data)
 
     # 3. Firestore에 사용자 등록 (없으면)
-    user_ref = db.collection("users").document(kakao_id)
+    user_ref = db.collection("users").document(user_uuid)
     if not user_ref.get().exists:
         user_ref.set({
             "nickname": nickname,
             "created_at": datetime.utcnow().isoformat()
         })
 
+    # JWT 토큰 생성 -> access_token, refresh_token, expires_in
+    jwt_token = create_jwt_token(user_uuid)
+
     return {
         "code" : status.HTTP_200_OK,
-        "access_token": access_token,
-        "acess_token_expires_in" : expires_in,
-        "refresh_token": refresh_token,
-        "refresh_token_expires_in": refresh_token_expires_in,
+        "access_token": jwt_token.get("access_token"), 
+        "access_token_expires_in" : jwt_token.get("access_token_expires_in"),
+        "refresh_token": jwt_token.get("refresh_token"),
+        "refresh_token_expires_in": jwt_token.get("refresh_token_expires_in"),
         "user": {
-            "id": kakao_id,
+            "id": user_uuid,
             "nickname": nickname
         }
     }
