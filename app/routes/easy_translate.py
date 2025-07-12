@@ -20,7 +20,7 @@ class TranslateResponse(BaseModel):
     translated_text: str
     timestamp: str
 
-@router.post("/", response_model=TranslateResponse)
+@router.post("", response_model=TranslateResponse)
 async def easy_translate(
     req: TranslateRequest,
     # user_id: str = Depends(get_current_user),
@@ -36,7 +36,7 @@ async def easy_translate(
     return TranslateResponse(
         original_text=text,
         translated_text=translated,
-        timestamp=datetime.utcnow().isoformat() + "+00:00"
+        timestamp=datetime.utcnow().isoformat()
     )
 
 @router.post(
