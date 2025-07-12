@@ -17,7 +17,7 @@ class EasyTranslateGraph:
 
         # streaming 용과 non-streaming 용 llm을 분리 생성
         self.llm = ChatOpenAI(
-            model="gpt-4o-mini",
+            model="o4-mini",
             api_key=Global.env.OPENAI_API_KEY,
             streaming=False
         )
