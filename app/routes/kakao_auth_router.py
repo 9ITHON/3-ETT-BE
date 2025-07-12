@@ -97,7 +97,7 @@ async def kakao_login(code: str):
         })
 
     # JWT 토큰 생성 -> access_token, refresh_token, expires_in
-    jwt_token = create_jwt_token(user_uuid)
+    jwt_token = await create_jwt_token(user_uuid)
 
     return {
         "code" : status.HTTP_200_OK,
