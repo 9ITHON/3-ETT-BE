@@ -8,7 +8,7 @@ from typing import Optional
 from app.services.easyTranslate import EasyTranslateService
 from app.utils.auth_utils import get_current_user
 
-router = APIRouter(prefix="/easy_translate", tags=["쉬운말 번역"])
+router = APIRouter(prefix="/easy-translate", tags=["쉬운말 번역"])
 service = EasyTranslateService()
 
 # 요청/응답 스키마 정의
@@ -24,7 +24,6 @@ class TranslateResponse(BaseModel):
 async def easy_translate(
     req: TranslateRequest,
     # user_id: str = Depends(get_current_user),
-    summary="일반 모드"
     ):
     text = req.content.strip()
     if not text:
@@ -43,7 +42,6 @@ async def easy_translate(
 @router.post(
     "/streaming",
     response_class=StreamingResponse,
-    summary="스트리밍 모드 (text/event-stream)"
 )
 async def easy_translate_streaming(
     req: TranslateRequest,
