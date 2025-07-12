@@ -6,7 +6,7 @@ from app.config import Global
 
 class EasyTranslateNode:
     def __init__(self, llm: ChatOpenAI):
-        self.llm = ChatOpenAI(model="gpt-4o-mini", api_key=Global.env.OPENAI_API_KEY)
+        self.llm = llm
         self.prompt_template = ChatPromptTemplate.from_messages([
             ("system", EasyTranslatePrompt.system_prompt),
             ("user", "{original}")
@@ -17,6 +17,7 @@ class EasyTranslateNode:
         prompt = self.prompt_template.format_prompt(
             original=state["original"]
         ).to_messages()
+        # LLM에 prompt 전달하여 번역 결과 얻기
         response = self.llm.invoke(prompt)
         state["translated"].append(response.content)
         return state
