@@ -6,16 +6,22 @@ from app.routes.kakao_auth_router import router as kakao_auth_router
 from app.routes.archive_router import router as archive_router
 from app.routes.easy_translate import router as easy_translate_router
 from fastapi.middleware.cors import CORSMiddleware
+from app.middleware.request_id import RequestIDMiddleware
 from app.utils.rulebook import validate_rulebook
+from app.utils.logger import logger
 import base64
 import httpx
 import time
 import uuid
 import json
 
-app = FastAPI()
+app = FastAPI(title="쉬운말 번역 API", version="1.0.0")
 
-# CORS 설정
+# 미들웨어 설정 (순서 중요!)
+# 1. Request ID 미들웨어 먼저 추가
+app.add_middleware(RequestIDMiddleware)
+
+# 2. CORS 미들웨어
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 또는 프론트엔드 도메인만 허용할 수 있습니다.
@@ -24,7 +30,10 @@ app.add_middleware(
     allow_headers=["*"],  # 모든 헤더 허용
 )
 
+# 시작 시 로그
+logger.info("쉬운말 번역 API 서버 시작")
 
+# 라우터 등록
 app.include_router(kakao_auth_router)
 app.include_router(archive_router)
 app.include_router(feedback_router)
@@ -50,9 +59,25 @@ def extract_text_from_pdf(data: bytes) -> str:
         raise HTTPException(status_code=400, detail=f"PDF 처리 실패: {e}")
     
     
-@app.get('/')
-def home():
-    return {"message" : "Welcome Home"}
+@app.get('/health')
+async def health_check():
+    """서버 상태 확인"""
+    logger.info("헬스 체크 요청")
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "service": "쉬운말 번역 API"
+    }
+
+@app.get("/")
+async def root():
+    """API 루트 엔드포인트"""
+    logger.info("루트 엔드포인트 요청")
+    return {
+        "message": "쉬운말 번역 API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
 
 @app.post("/validate")
 def rulebook_endpoint(payload: TextIn):
