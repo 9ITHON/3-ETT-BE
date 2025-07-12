@@ -2,18 +2,22 @@ from datetime import datetime
 from typing import Optional
 import firebase_admin
 from firebase_admin import credentials, firestore
+from app.utils.logger import logger
+import pytz
 
 cred = credentials.Certificate("firebase_key.json")
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
+
+
 def save_feedback(rating: str, comment: Optional[str], user_id: Optional[str] = None):
     doc_ref = db.collection("feedbacks").document()
     doc_ref.set({
         "rating": rating,
         "comment": comment,
-        "timestamp": datetime.utcnow(),
+        "timestamp": datetime.now(pytz.timezone('Asia/Seoul')).strftime("%Y-%m-%dT%H:%M:%S"),
         "user_id": user_id
     })
 
@@ -98,3 +102,33 @@ def delete_archive(user_id: str, archive_id: str):
         raise PermissionError("해당 archive를 삭제할 권한이 없습니다.")
 
     doc_ref.delete()
+
+def search_archives_query(user_id: str, query: str):
+    """사용자 아카이브에서 검색"""
+    try:
+        docs = db.collection("archives") \
+                  .where("user_id", "==", user_id) \
+                  .order_by("timestamp", direction=firestore.Query.DESCENDING) \
+                  .stream()
+        
+        results = []
+        query_lower = query.lower()
+        
+        for doc in docs:
+            doc_data = doc.to_dict()
+            translated_text = doc_data.get("translated_text", "")
+            
+            # 문자열이든 배열이든 처리
+            if isinstance(translated_text, str):
+                if query_lower in translated_text.lower():
+                    results.append(doc_data)
+            elif isinstance(translated_text, list):
+                if any(query_lower in text.lower() for text in translated_text):
+                    results.append(doc_data)
+
+        logger.info(f"검색 결과: {len(results)}개 문서", user_id=user_id, query=query)
+        return results
+    
+    except Exception as e:
+        print(f"검색 중 오류 발생: {e}")
+        return []

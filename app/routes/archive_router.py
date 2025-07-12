@@ -1,14 +1,14 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from app.firebase_config import delete_archive, get_archives_by_user_id, save_archive, get_archive_by_id
+from app.firebase_config import delete_archive, get_archives_by_user_id, save_archive, get_archive_by_id, search_archives_query
 from app.utils.auth_utils import get_current_user  # 카카오 인증을 사용하는 함수
 
 class ArchiveSaveRequest(BaseModel):
     translated_text: str
     timestamp: str
 
-router = APIRouter(prefix="/archive")
+router = APIRouter(prefix="/archive", tags=["아카이브"])
 
 # /save: 사용자의 번역된 텍스트를 Firestore에 저장하는 엔드포인트
 @router.post("/save")
@@ -106,5 +106,21 @@ async def get_archive_detail(
     except Exception as e:
         print(f"[ERROR] 상세조회 실패: {e}")
         raise HTTPException(status_code=500, detail="상세 조회 중 오류 발생")
+    
+
+@router.get("/search/{query}")
+async def search_archives(
+    query: str,
+    # user = Depends(get_current_user)
+):
+    try:
+        archives = search_archives_query("973bca4f-f641-0c2f-ca91-4854652f6c34", query)
+        return {
+            "code": status.HTTP_200_OK,
+            "archives": archives
+        }
+    except Exception as e:
+        print(f"[ERROR] 검색 실패: {e}")
+        raise HTTPException(status_code=500, detail="검색 중 오류 발생")
 
 __all__ = ["router"]
