@@ -94,6 +94,32 @@ async def kakao_login(code: str):
         }
     }
 
+@router.get("/user")
+async def get_user_info(authorization: str = Header(...)):
+    async with httpx.AsyncClient() as client:
+        user_resp = await client.get(
+            "https://kapi.kakao.com/v2/user/me",
+            headers={"Authorization": authorization}
+        )
+
+    if user_resp.status_code != 200:
+        raise HTTPException(status_code=400, detail="카카오 사용자 정보 요청 실패")
+
+    user_info = user_resp.json()
+    kakao_id = str(user_info.get("id"))
+    profile = user_info.get("kakao_account", {}).get("profile", {})
+    nickname = profile.get("nickname")
+    images = profile.get("images")
+
+    return {
+        "code": status.HTTP_200_OK,
+        "user": {
+            "id": kakao_id,
+            "nickname": nickname,
+            "images": images if images else None
+        }
+    }
+
 @router.post("/refresh")
 async def refresh(data: RefreshTokenRequest = Body(...)):
     token_data = {
